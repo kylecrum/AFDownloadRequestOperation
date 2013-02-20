@@ -177,19 +177,17 @@ typedef void (^AFURLConnectionProgressiveOperationProgressBlock)(NSInteger bytes
         // loss of network connections = error set, but not cancel
         }else if(!self.error) {
             // move file to final position and capture error
-            @synchronized(self) {
-                NSFileManager *fileManager = [NSFileManager new];
-                if (self.shouldOverwrite) {
-                    [fileManager removeItemAtPath:_targetPath error:NULL]; // avoid "File exists" error
-                }
-                [fileManager moveItemAtPath:[self tempPath] toPath:_targetPath error:&localError];
-                if (localError) {
-                    _fileError = localError;
-                }
-            }
+            [self moveDownloadToDestination];
         }
 
         if (self.error) {
+            if (self.error.domain == AFNetworkingErrorDomain) {
+                NSHTTPURLResponse *response = (NSHTTPURLResponse *)[self.error.userInfo objectForKey:AFNetworkingOperationFailingURLResponseErrorKey];
+                if ([response statusCode] == 416) { //requested bytes out of range, this is probably already downloaded
+                    [self moveDownloadToDestination];
+                }
+            }
+            
             if (failure) {
                 dispatch_async(self.failureCallbackQueue ?: dispatch_get_main_queue(), ^{
                     failure(self, self.error);
@@ -204,6 +202,21 @@ typedef void (^AFURLConnectionProgressiveOperationProgressBlock)(NSInteger bytes
         }
     };
 #pragma clang diagnostic pop
+}
+
+-(void)moveDownloadToDestination
+{
+    NSError *localError = nil;
+    @synchronized(self) {
+        NSFileManager *fileManager = [NSFileManager new];
+        if (self.shouldOverwrite) {
+            [fileManager removeItemAtPath:_targetPath error:NULL]; // avoid "File exists" error
+        }
+        [fileManager moveItemAtPath:[self tempPath] toPath:_targetPath error:&localError];
+        if (localError) {
+            _fileError = localError;
+        }
+    }
 }
 
 - (NSError *)error {
