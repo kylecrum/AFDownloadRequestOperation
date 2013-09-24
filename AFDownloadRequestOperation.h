@@ -69,6 +69,11 @@
  */
 @property (assign, readonly) long long offsetContentLength;
 
+/**
+ The callback dispatch queue on progressive download. If `NULL` (default), the main queue is used.
+ */
+@property (nonatomic, assign) dispatch_queue_t progressiveDownloadCallbackQueue;
+
 ///----------------------------------
 /// @name Creating Request Operations
 ///----------------------------------
@@ -101,6 +106,6 @@
  
  @see setDownloadProgressBlock
  */
-- (void)setProgressiveDownloadProgressBlock:(void (^)(NSInteger bytesRead, long long totalBytesRead, long long totalBytesExpected, long long totalBytesReadForFile, long long totalBytesExpectedToReadForFile))block;
+- (void)setProgressiveDownloadProgressBlock:(void (^)(AFDownloadRequestOperation *operation, NSInteger bytesRead, long long totalBytesRead, long long totalBytesExpected, long long totalBytesReadForFile, long long totalBytesExpectedToReadForFile))block;
 
 @end
